@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/groupchat/chat/chatserver"
+	"github.com/groupchat/chat"
 	"github.com/groupchat/mq/nsq"
 )
 
@@ -20,6 +20,6 @@ func main() {
 	subscriber := nsq.NewSubscriber("10.255.13.17:4161")
 
 	//Init Chat Server
-	server := chatserver.New(":8080", publisher, subscriber)
+	server := chat.NewServer(":8080", publisher, subscriber)
 	server.Run()
 }

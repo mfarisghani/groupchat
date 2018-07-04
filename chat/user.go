@@ -7,6 +7,7 @@ import (
 )
 
 type User struct {
+	server     *Server
 	UserID     UserID `json:"user_id"`
 	RoomID     RoomID `json:"room_id"`
 	Name       string `json:"name"`
@@ -14,10 +15,13 @@ type User struct {
 	subscriber Subscriber
 	conn       *websocket.Conn
 	message    chan string
+	readClose  chan bool
+	writeClose chan bool
 }
 
-func NewUser(userID UserID, roomID RoomID, name string, publisher Publisher, subscriber Subscriber, conn *websocket.Conn) *User {
+func NewUser(server *Server, userID UserID, roomID RoomID, name string, publisher Publisher, subscriber Subscriber, conn *websocket.Conn) *User {
 	return &User{
+		server:     server,
 		UserID:     userID,
 		RoomID:     roomID,
 		Name:       name,
@@ -25,18 +29,30 @@ func NewUser(userID UserID, roomID RoomID, name string, publisher Publisher, sub
 		subscriber: subscriber,
 		conn:       conn,
 		message:    make(chan string),
+		readClose:  make(chan bool),
+		writeClose: make(chan bool),
 	}
 }
 
 func (u *User) read() {
 	for {
-		_, msg, err := u.conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			u.conn.Close()
-		}
+		select {
+		case isReadClose := <-u.readClose:
+			if isReadClose {
+				u.server.removeUser <- u
+				break
+			}
+		default:
+			_, msg, err := u.conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				u.conn.Close()
+				u.close <- true
+				break
+			}
 
-		u.publisher.Publish(u.RoomID, string(msg))
+			u.publisher.Publish(u.RoomID, string(msg))
+		}
 	}
 }
 
@@ -44,9 +60,16 @@ func (u *User) write() {
 	for {
 		select {
 		case msg := <-u.message:
-			log.Println(msg)
 			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
 				log.Println(err)
+				u.conn.Close()
+				u.close <- true
+				break
+			}
+		case isClose := <-u.close:
+			if isClose {
+				u.server.removeUser <- u
+				break
 			}
 		}
 	}

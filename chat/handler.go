@@ -1,10 +1,9 @@
-package chatserver
+package chat
 
 import (
 	"log"
 	"net/http"
 
-	"github.com/groupchat/chat"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -16,7 +15,10 @@ func (s *Server) connectRoom(w http.ResponseWriter, r *http.Request, p httproute
 		return
 	}
 
-	usr := chat.NewUser(chat.UserID("antony"), chat.RoomID(roomID), "Antony", s.publisher, s.subscriber, conn)
-	s.Users[usr.UserID] = usr
+	usr := NewUser(s, UserID("antony"), RoomID(roomID), "Antony", s.publisher, s.subscriber, conn)
+	s.users[usr.UserID] = usr
 	usr.Run()
+
+	log.Println("New user connected", usr)
+	log.Println(len(s.users))
 }
