@@ -24,6 +24,7 @@ func NewUser(userID UserID, roomID RoomID, name string, publisher Publisher, sub
 		publisher:  publisher,
 		subscriber: subscriber,
 		conn:       conn,
+		message:    make(chan string),
 	}
 }
 
@@ -35,8 +36,6 @@ func (u *User) read() {
 			u.conn.Close()
 		}
 
-		log.Println(msg)
-
 		u.publisher.Publish(u.RoomID, string(msg))
 	}
 }
@@ -45,7 +44,10 @@ func (u *User) write() {
 	for {
 		select {
 		case msg := <-u.message:
-			u.conn.WriteMessage(0, []byte(msg))
+			log.Println(msg)
+			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }

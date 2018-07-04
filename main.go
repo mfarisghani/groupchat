@@ -8,14 +8,16 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.Llongfile | log.Ldate)
+
 	//Init Message Queueing
-	publisher, err := nsq.NewPublisher("172.31.0.58:4151")
+	publisher, err := nsq.NewPublisher("10.255.13.17:4150")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	subscriber := nsq.NewSubscriber("172.31.0.58:4161")
+	subscriber := nsq.NewSubscriber("10.255.13.17:4161")
 
 	//Init Chat Server
 	server := chatserver.New(":8080", publisher, subscriber)
