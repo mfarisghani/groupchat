@@ -21,10 +21,14 @@ type Server struct {
 
 func New(port string, publisher chat.Publisher, subscriber chat.Subscriber) *Server {
 	server := &Server{
-		Users:      make(map[chat.UserID]*chat.User),
-		port:       port,
-		mux:        httprouter.New(),
-		upgrader:   websocket.Upgrader{},
+		Users: make(map[chat.UserID]*chat.User),
+		port:  port,
+		mux:   httprouter.New(),
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
 		publisher:  publisher,
 		subscriber: subscriber,
 	}

@@ -35,6 +35,8 @@ func (u *User) read() {
 			u.conn.Close()
 		}
 
+		log.Println(msg)
+
 		u.publisher.Publish(u.RoomID, string(msg))
 	}
 }

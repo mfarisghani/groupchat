@@ -18,4 +18,5 @@ func (s *Server) connectRoom(w http.ResponseWriter, r *http.Request, p httproute
 
 	usr := chat.NewUser(chat.UserID("antony"), chat.RoomID(roomID), "Antony", s.publisher, s.subscriber, conn)
 	s.Users[usr.UserID] = usr
+	usr.Run()
 }

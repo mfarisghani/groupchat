@@ -9,7 +9,7 @@ import (
 
 func main() {
 	//Init Message Queueing
-	publisher, err := nsq.NewPublisher("172.31.0.58:4150")
+	publisher, err := nsq.NewPublisher("172.31.0.58:4151")
 	if err != nil {
 		log.Println(err)
 		return

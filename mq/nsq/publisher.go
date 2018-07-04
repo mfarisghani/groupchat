@@ -27,6 +27,7 @@ func NewPublisher(addr string) (chat.Publisher, error) {
 }
 
 func (p *Publisher) Publish(roomID chat.RoomID, message string) error {
+	log.Println(roomID, message)
 	if err := p.producer.Publish(string(roomID), []byte(message)); err != nil {
 		log.Println(err)
 		return err

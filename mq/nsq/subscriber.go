@@ -38,6 +38,7 @@ func (s *Subscriber) Subscribe(usr *chat.User) error {
 
 func (s *Subscriber) handleMessage(consumer chat.Consumer) func(m *nsq.Message) error {
 	return func(msg *nsq.Message) error {
+		log.Println(msg.Body)
 		if err := consumer.Consume(string(msg.Body)); err != nil {
 			log.Println(err)
 			return err
