@@ -7,4 +7,4 @@ run-nats:
 	@go run cmd/nats/app.go
 
 run-client:
-	@go run cmd/client/main.go
+	@go run cmd/client/app.go
