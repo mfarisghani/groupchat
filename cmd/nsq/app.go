@@ -9,15 +9,15 @@ import (
 
 func main() {
 	//Init Message Queueing
-	publisher, err := nsq.NewPublisher("172.31.0.58:4151")
+	nsqPublisher, err := nsq.NewPublisher("devel-go.tkpd:4150")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	subscriber := nsq.NewSubscriber("172.31.0.58:4161")
+	nsqSubscriber := nsq.NewSubscriber("devel-go.tkpd:4161")
 
 	//Init Chat Server
-	server := chatserver.New(":8080", publisher, subscriber)
+	server := chatserver.New(":8080", nsqPublisher, nsqSubscriber)
 	server.Run()
 }
