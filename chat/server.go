@@ -44,7 +44,7 @@ func (s *Server) Run() {
 func (s *Server) handleUserEnter(req *UserEnterRequest) {
 	usr := NewUser(s, UserID("antony"), RoomID(req.RoomID), "Antony", s.publisher, s.subscriber, req.Conn)
 	s.users[usr.UserID] = usr
-	usr.Run()
+	go usr.Run()
 
 	log.Println("New user connected", usr)
 	log.Println(len(s.users))

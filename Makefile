@@ -1,10 +1,10 @@
 run-nsq: 
 	@echo " >> running nsq"
-	@go run cmd/nsq/app.go
+	@go run cmd/nsq/main.go
 
 run-nats: 
 	@echo " >> running nats"
-	@go run cmd/nats/app.go
+	@go run cmd/nats/main.go
 
 run-client:
 	@go run cmd/client/main.go
