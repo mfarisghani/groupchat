@@ -7,34 +7,35 @@ import (
 )
 
 type User struct {
-	server      *Server
-	UserID      UserID `json:"user_id"`
-	RoomID      RoomID `json:"room_id"`
-	Name        string `json:"name"`
-	publisher   Publisher
-	subscriber  Subscriber
-	conn        *websocket.Conn
-	message     chan string
-	readClose   chan bool
-	readClosed  chan bool
-	writeClose  chan bool
-	writeClosed chan bool
+	server        *Server
+	UserID        UserID `json:"user_id"`
+	RoomID        RoomID `json:"room_id"`
+	Name          string `json:"name"`
+	publisher     Publisher
+	subscriber    Subscriber
+	conn          *websocket.Conn
+	message       chan string
+	isReadClosed  bool
+	isWriteClosed bool
+	readClose     chan bool
+	writeClose    chan bool
+	checkClose    chan bool
+	userClose     chan bool
 }
 
 func NewUser(server *Server, userID UserID, roomID RoomID, name string, publisher Publisher, subscriber Subscriber, conn *websocket.Conn) *User {
 	return &User{
-		server:      server,
-		UserID:      userID,
-		RoomID:      roomID,
-		Name:        name,
-		publisher:   publisher,
-		subscriber:  subscriber,
-		conn:        conn,
-		message:     make(chan string),
-		readClose:   make(chan bool),
-		readClosed:  make(chan bool),
-		writeClose:  make(chan bool),
-		writeClosed: make(chan bool),
+		server:     server,
+		UserID:     userID,
+		RoomID:     roomID,
+		Name:       name,
+		publisher:  publisher,
+		subscriber: subscriber,
+		conn:       conn,
+		message:    make(chan string),
+		writeClose: make(chan bool),
+		checkClose: make(chan bool),
+		userClose:  make(chan bool),
 	}
 }
 
@@ -50,9 +51,10 @@ func (u *User) Run() {
 	}
 	go u.read()
 	go u.write()
+	go u.check()
 
-	<-u.readClosed
-	<-u.writeClosed
+	<-u.userClose
+	log.Println("User need to be closed")
 
 	u.close()
 }
@@ -61,37 +63,56 @@ func (u *User) read() {
 	for {
 		select {
 		case <-u.readClose:
+			log.Println("Read close dipanggil")
 			u.writeClose <- true
-			u.readClosed <- true
+			u.isReadClosed = true
+			u.checkClose <- true
 			break
 		default:
 			_, msg, err := u.conn.ReadMessage()
 			if err != nil {
 				log.Println(err)
 				u.writeClose <- true
-				u.readClosed <- true
+				u.isReadClosed = true
+				u.checkClose <- true
 				break
 			}
 			log.Println("Reading", string(msg))
 			u.publisher.Publish(u.RoomID, string(msg))
 		}
 	}
+
 }
 
 func (u *User) write() {
 	for {
 		select {
 		case <-u.writeClose:
+			log.Println("Write close dipanggil")
 			u.readClose <- true
-			u.writeClosed <- true
+			u.isWriteClosed = true
+			u.checkClose <- true
 			break
 		case msg := <-u.message:
 			log.Println("Writing", string(msg))
 			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
 				log.Println(err)
 				u.readClose <- true
-				u.writeClosed <- true
+				u.isWriteClosed = true
+				u.checkClose <- true
 				break
+			}
+		}
+	}
+}
+
+func (u *User) check() {
+	for {
+		select {
+		case <-u.checkClose:
+			log.Println("check close dipanggil", u.isReadClosed, u.isWriteClosed)
+			if u.isReadClosed && u.isWriteClosed {
+				u.userClose <- true
 			}
 		}
 	}

@@ -3,3 +3,6 @@ run-server:
 
 run-client:
 	@go run cmd/client/main.go
+
+run-test:
+	@go run cmd/test/main.go

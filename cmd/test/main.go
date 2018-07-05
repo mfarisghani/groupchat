@@ -37,7 +37,7 @@ func main() {
 
 	time.Sleep(1 * time.Second)
 	println("close test 1 dimulai")
-	test1 <- true
+	test2 <- true
 	println("close test 1 selesai")
 
 	<-closedTest1

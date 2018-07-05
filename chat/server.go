@@ -24,6 +24,7 @@ func NewServer(publisher Publisher, subscriber Subscriber) *Server {
 }
 
 func (s *Server) OnUserEnter(req *UserEnterRequest) {
+	log.Println("User entering room", req.RoomID, "with user id", req.UserID)
 	s.userEnter <- req
 }
 
@@ -31,8 +32,10 @@ func (s *Server) Run() {
 	for {
 		select {
 		case req := <-s.userEnter:
+			log.Println("User enter")
 			s.handleUserEnter(req)
 		case req := <-s.userLeave:
+			log.Println("User leaving")
 			s.handleUserLeave(req)
 		}
 	}
