@@ -36,7 +36,6 @@ func (s *Server) Run() {
 			s.handleUserLeave(req)
 		}
 	}
-
 }
 
 func (s *Server) handleUserEnter(req *UserEnterRequest) {
