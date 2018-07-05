@@ -27,8 +27,6 @@ func NewPublisher(addr string) (chat.Publisher, error) {
 }
 
 func (p *Publisher) Publish(roomID chat.RoomID, message string) error {
-	log.Println(roomID, message)
-
 	if c, err := gRedisConn(); err != nil {
 		log.Printf("error on redis conn. %s\n", err)
 	} else {

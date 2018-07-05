@@ -5,7 +5,6 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/groupchat/chat"
-	nats "github.com/nats-io/go-nats"
 )
 
 type Subscriber struct {
@@ -31,14 +30,22 @@ func (s *Subscriber) Subscribe(usr *chat.User) error {
 		return err
 	}
 
-	return nil
-}
-
-func (s *Subscriber) handleMessage(consumer chat.Consumer) func(m *nats.Msg) {
-	return func(msg *nats.Msg) {
-		log.Println(msg.Data)
-		if err := consumer.Consume(string(msg.Data)); err != nil {
-			log.Println(err)
+	go func() {
+		for {
+			switch v := s.gPubSubConn.Receive().(type) {
+			case redis.Message:
+				if err := usr.Consume(string(v.Data)); err != nil {
+					log.Println(err)
+					break
+				}
+			case redis.Subscription:
+				log.Printf("subscription message: %s: %s %d\n", v.Channel, v.Kind, v.Count)
+			case error:
+				log.Println("error pub/sub, delivery has stopped")
+				break
+			}
 		}
-	}
+	}()
+
+	return nil
 }
