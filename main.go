@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/groupchat/chat"
+	"github.com/groupchat/chat/handler"
 	"github.com/groupchat/mq/nsq"
 )
 
@@ -11,15 +12,18 @@ func main() {
 	log.SetFlags(log.Llongfile | log.Ldate)
 
 	//Init Message Queueing
-	publisher, err := nsq.NewPublisher("10.255.13.17:4150")
+	publisher, err := nsq.NewPublisher("devel-go.tkpd:4150")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	subscriber := nsq.NewSubscriber("10.255.13.17:4161")
+	subscriber := nsq.NewSubscriber("devel-go.tkpd:4161")
 
 	//Init Chat Server
-	server := chat.NewServer(":8080", publisher, subscriber)
-	server.Run()
+	server := chat.NewServer(publisher, subscriber)
+
+	//Init Chat Server Handler
+	handler := handler.New(server, ":8080")
+	handler.Run()
 }

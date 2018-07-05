@@ -2,55 +2,56 @@ package chat
 
 import (
 	"log"
-
-	"github.com/gorilla/websocket"
-	"github.com/julienschmidt/httprouter"
-
-	"net/http"
 )
 
 type Server struct {
 	users      map[UserID]*User
-	port       string
-	mux        *httprouter.Router
-	upgrader   websocket.Upgrader
 	publisher  Publisher
 	subscriber Subscriber
-	removeUser chan *User
+	userEnter  chan *UserEnterRequest
+	userLeave  chan *UserLeaveRequest
 }
 
-func NewServer(port string, publisher Publisher, subscriber Subscriber) *Server {
+func NewServer(publisher Publisher, subscriber Subscriber) *Server {
 	server := &Server{
-		users: make(map[UserID]*User),
-		port:  port,
-		mux:   httprouter.New(),
-		upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		},
+		users:      make(map[UserID]*User),
 		publisher:  publisher,
 		subscriber: subscriber,
-		removeUser: make(chan *User),
+		userEnter:  make(chan *UserEnterRequest),
+		userLeave:  make(chan *UserLeaveRequest),
 	}
-	server.initRoute()
 	return server
 }
 
-func (s *Server) Run() {
-	go func() {
-		for {
-			select {
-			case usr := <-s.removeUser:
-				log.Println("Removing user")
-				log.Println(usr)
-				log.Println(len(s.users))
-				delete(s.users, usr.UserID)
-				log.Println(len(s.users))
-			}
-		}
-	}()
+func (s *Server) OnUserEnter(req *UserEnterRequest) {
+	s.userEnter <- req
+}
 
-	log.Println("Serving on http://localhost" + s.port)
-	log.Println(http.ListenAndServe(s.port, s.mux))
+func (s *Server) Run() {
+	for {
+		select {
+		case req := <-s.userEnter:
+			s.handleUserEnter(req)
+		case req := <-s.userLeave:
+			s.handleUserLeave(req)
+		}
+	}
+
+}
+
+func (s *Server) handleUserEnter(req *UserEnterRequest) {
+	usr := NewUser(s, UserID("antony"), RoomID(req.RoomID), "Antony", s.publisher, s.subscriber, req.Conn)
+	s.users[usr.UserID] = usr
+	usr.Run()
+
+	log.Println("New user connected", usr)
+	log.Println(len(s.users))
+}
+
+func (s *Server) handleUserLeave(req *UserLeaveRequest) {
+	log.Println("Removing user")
+	log.Println(req.User)
+	log.Println(len(s.users))
+	delete(s.users, req.User.UserID)
+	log.Println(len(s.users))
 }
