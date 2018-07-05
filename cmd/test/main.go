@@ -1,7 +1,9 @@
 package main
 
-func test() {
-	/* println("Mulai fungsi tutup channel")
+import "time"
+
+func main() {
+	println("Mulai fungsi tutup channel")
 
 	test1 := make(chan bool)
 	test2 := make(chan bool)
@@ -44,5 +46,5 @@ func test() {
 	<-closedTest2
 	println("fungsi test 2 telah ditutup")
 
-	println("Berhasil") */
+	println("Berhasil")
 }

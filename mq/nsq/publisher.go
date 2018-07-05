@@ -19,6 +19,11 @@ func NewPublisher(addr string) (chat.Publisher, error) {
 		return nil, err
 	}
 
+	if err := producer.Ping(); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	publisher := &Publisher{
 		producer: producer,
 	}

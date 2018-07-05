@@ -5,3 +5,6 @@ run-nsq:
 run-nats: 
 	@echo " >> running nats"
 	@go run cmd/nats/app.go
+
+run-client:
+	@go run cmd/client/main.go

@@ -61,19 +61,21 @@ func (u *User) read() {
 	for {
 		select {
 		case <-u.readClose:
+			u.writeClose <- true
 			u.readClosed <- true
 			break
+		default:
+			_, msg, err := u.conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				u.writeClose <- true
+				u.readClosed <- true
+				break
+			}
+			log.Println("Reading", string(msg))
+			u.publisher.Publish(u.RoomID, string(msg))
 		}
-		_, msg, err := u.conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			u.readClosed <- true
-			break
-		}
-
-		u.publisher.Publish(u.RoomID, string(msg))
 	}
-	u.writeClose <- true
 }
 
 func (u *User) write() {
@@ -84,6 +86,7 @@ func (u *User) write() {
 			u.writeClosed <- true
 			break
 		case msg := <-u.message:
+			log.Println("Writing", string(msg))
 			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
 				log.Println(err)
 				u.readClose <- true
@@ -95,6 +98,8 @@ func (u *User) write() {
 }
 
 func (u *User) close() {
+	log.Println("starting close")
+
 	u.conn.Close()
 	u.server.userLeave <- &UserLeaveRequest{
 		User: u,
