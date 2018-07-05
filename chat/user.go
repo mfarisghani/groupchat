@@ -7,46 +7,34 @@ import (
 )
 
 type User struct {
-	UserID     UserID `json:"user_id"`
-	RoomID     RoomID `json:"room_id"`
-	Name       string `json:"name"`
-	publisher  Publisher
-	subscriber Subscriber
-	conn       *websocket.Conn
-	message    chan string
+	server      *Server
+	UserID      UserID `json:"user_id"`
+	RoomID      RoomID `json:"room_id"`
+	Name        string `json:"name"`
+	publisher   Publisher
+	subscriber  Subscriber
+	conn        *websocket.Conn
+	message     chan string
+	readClose   chan bool
+	readClosed  chan bool
+	writeClose  chan bool
+	writeClosed chan bool
 }
 
-func NewUser(userID UserID, roomID RoomID, name string, publisher Publisher, subscriber Subscriber, conn *websocket.Conn) *User {
+func NewUser(server *Server, userID UserID, roomID RoomID, name string, publisher Publisher, subscriber Subscriber, conn *websocket.Conn) *User {
 	return &User{
-		UserID:     userID,
-		RoomID:     roomID,
-		Name:       name,
-		publisher:  publisher,
-		subscriber: subscriber,
-		conn:       conn,
-	}
-}
-
-func (u *User) read() {
-	for {
-		_, msg, err := u.conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			u.conn.Close()
-		}
-
-		log.Println(msg)
-
-		u.publisher.Publish(u.RoomID, string(msg))
-	}
-}
-
-func (u *User) write() {
-	for {
-		select {
-		case msg := <-u.message:
-			u.conn.WriteMessage(0, []byte(msg))
-		}
+		server:      server,
+		UserID:      userID,
+		RoomID:      roomID,
+		Name:        name,
+		publisher:   publisher,
+		subscriber:  subscriber,
+		conn:        conn,
+		message:     make(chan string),
+		readClose:   make(chan bool),
+		readClosed:  make(chan bool),
+		writeClose:  make(chan bool),
+		writeClosed: make(chan bool),
 	}
 }
 
@@ -62,4 +50,53 @@ func (u *User) Run() {
 	}
 	go u.read()
 	go u.write()
+
+	<-u.readClosed
+	<-u.writeClosed
+
+	u.close()
+}
+
+func (u *User) read() {
+	for {
+		select {
+		case <-u.readClose:
+			u.readClosed <- true
+			break
+		}
+		_, msg, err := u.conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			u.readClosed <- true
+			break
+		}
+
+		u.publisher.Publish(u.RoomID, string(msg))
+	}
+	u.writeClose <- true
+}
+
+func (u *User) write() {
+	for {
+		select {
+		case <-u.writeClose:
+			u.readClose <- true
+			u.writeClosed <- true
+			break
+		case msg := <-u.message:
+			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
+				log.Println(err)
+				u.readClose <- true
+				u.writeClosed <- true
+				break
+			}
+		}
+	}
+}
+
+func (u *User) close() {
+	u.conn.Close()
+	u.server.userLeave <- &UserLeaveRequest{
+		User: u,
+	}
 }

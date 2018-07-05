@@ -3,21 +3,27 @@ package main
 import (
 	"log"
 
-	"github.com/groupchat/chat/chatserver"
+	"github.com/groupchat/chat"
+	"github.com/groupchat/chat/handler"
 	"github.com/groupchat/mq/nsq"
 )
 
 func main() {
+	log.SetFlags(log.Llongfile | log.Ldate)
+
 	//Init Message Queueing
-	nsqPublisher, err := nsq.NewPublisher("devel-go.tkpd:4150")
+	publisher, err := nsq.NewPublisher("devel-go.tkpd:4150")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	nsqSubscriber := nsq.NewSubscriber("devel-go.tkpd:4161")
+	subscriber := nsq.NewSubscriber("devel-go.tkpd:4161")
 
 	//Init Chat Server
-	server := chatserver.New(":8080", nsqPublisher, nsqSubscriber)
-	server.Run()
+	server := chat.NewServer(publisher, subscriber)
+
+	//Init Chat Server Handler
+	handler := handler.New(server, ":8080")
+	handler.Run()
 }
