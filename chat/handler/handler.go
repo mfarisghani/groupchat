@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/groupchat/chat"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
@@ -46,9 +47,11 @@ func (h *Handler) connectRoom(w http.ResponseWriter, r *http.Request, p httprout
 		return
 	}
 
+	id := uuid.NewV4()
+
 	req := &chat.UserEnterRequest{
 		RoomID: roomID,
-		UserID: "asdasd",
+		UserID: id.String(),
 		Conn:   conn,
 	}
 

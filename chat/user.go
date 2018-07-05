@@ -33,6 +33,7 @@ func NewUser(server *Server, userID UserID, roomID RoomID, name string, publishe
 		subscriber: subscriber,
 		conn:       conn,
 		message:    make(chan string),
+		readClose:  make(chan bool),
 		writeClose: make(chan bool),
 		checkClose: make(chan bool),
 		userClose:  make(chan bool),
@@ -63,47 +64,48 @@ func (u *User) read() {
 	for {
 		select {
 		case <-u.readClose:
-			log.Println("Read close dipanggil")
-			u.writeClose <- true
-			u.isReadClosed = true
-			u.checkClose <- true
-			break
+			log.Println("Read close dipanggil dari channel")
+			goto close
 		default:
 			_, msg, err := u.conn.ReadMessage()
 			if err != nil {
 				log.Println(err)
-				u.writeClose <- true
-				u.isReadClosed = true
-				u.checkClose <- true
-				break
+				log.Println("Read close dipanggil dari error")
+				goto close
 			}
 			log.Println("Reading", string(msg))
 			u.publisher.Publish(u.RoomID, string(msg))
 		}
 	}
-
+close:
+	if !u.isWriteClosed {
+		u.writeClose <- true
+	}
+	u.isReadClosed = true
+	u.checkClose <- true
 }
 
 func (u *User) write() {
 	for {
 		select {
 		case <-u.writeClose:
-			log.Println("Write close dipanggil")
-			u.readClose <- true
-			u.isWriteClosed = true
-			u.checkClose <- true
-			break
+			log.Println("Write close dipanggil dari channel")
+			goto close
 		case msg := <-u.message:
 			log.Println("Writing", string(msg))
 			if err := u.conn.WriteMessage(1, []byte(msg)); err != nil {
 				log.Println(err)
-				u.readClose <- true
-				u.isWriteClosed = true
-				u.checkClose <- true
-				break
+				log.Println("Write close dipanggil dari error")
+				goto close
 			}
 		}
 	}
+close:
+	if !u.isReadClosed {
+		u.readClose <- true
+	}
+	u.isWriteClosed = true
+	u.checkClose <- true
 }
 
 func (u *User) check() {
@@ -113,6 +115,7 @@ func (u *User) check() {
 			log.Println("check close dipanggil", u.isReadClosed, u.isWriteClosed)
 			if u.isReadClosed && u.isWriteClosed {
 				u.userClose <- true
+				break
 			}
 		}
 	}
