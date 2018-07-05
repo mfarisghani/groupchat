@@ -3,26 +3,30 @@ package nsq
 import (
 	"log"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/groupchat/chat"
 	nats "github.com/nats-io/go-nats"
 )
 
 type Subscriber struct {
-	addr string
-	conn *nats.Conn
+	gPubSubConn *redis.PubSubConn
+	gRedisConn  *redis.Conn
 }
 
 func NewSubscriber(addr string) chat.Subscriber {
-	conn, _ := nats.Connect(addr)
+	conn, err := redis.Dial("tcp", addr)
+	if err != nil {
+		return nil
+	}
 
 	return &Subscriber{
-		addr: addr,
-		conn: conn,
+		gPubSubConn: &redis.PubSubConn{Conn: conn},
+		gRedisConn:  &conn,
 	}
 }
 
 func (s *Subscriber) Subscribe(usr *chat.User) error {
-	_, err := s.conn.Subscribe(string(usr.RoomID), s.handleMessage(usr))
+	err := s.gPubSubConn.Subscribe(usr.RoomID)
 	if err != nil {
 		return err
 	}

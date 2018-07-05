@@ -11,7 +11,7 @@ import (
 
 // const address string = "172.31.5.228:8080"
 
-const address string = "localhost:8080"
+const address string = "localhost:6000"
 
 func main() {
 

@@ -2,6 +2,15 @@
 
 
 [[projects]]
+  name = "github.com/garyburd/redigo"
+  packages = [
+    "internal",
+    "redis"
+  ]
+  revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
+  version = "v1.6.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
@@ -21,7 +30,11 @@
 
 [[projects]]
   name = "github.com/nats-io/go-nats"
-  packages = [".","encoders/builtin","util"]
+  packages = [
+    ".",
+    "encoders/builtin",
+    "util"
+  ]
   revision = "062418ea1c2181f52dc0f954f6204370519a868b"
   version = "v1.5.0"
 
@@ -52,6 +65,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5363a9726627756fdf4b2b490d543d083633eb6f727adf08c9849912b3fc26b5"
+  inputs-digest = "3fc2f97177bb1d4884a043f3b08546209d693f6942155c5fe94ffb43439f5b03"
   solver-name = "gps-cdcl"
   solver-version = 1

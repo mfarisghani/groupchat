@@ -6,6 +6,10 @@ run-nats:
 	@echo " >> running nats"
 	@go run cmd/nats/main.go
 
+run-redis: 
+	@echo " >> running redis"
+	@go run cmd/redis/main.go
+
 run-client:
 	@go run cmd/client/main.go
 
